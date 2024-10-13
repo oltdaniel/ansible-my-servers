@@ -1,0 +1,42 @@
+---
+# Custom role, see README.md role genisis
+genisis_user: "{{ lookup('env','USER') }}"
+# genisis_user_passwordless_sudoer: true # default: true
+# genisis_group_sudo_passwordless_sudoers: true # default: true
+# genisis_user_ssh_pubkey: ~/.ssh/id_ed25519.pub # default: ~/.ssh/id_ed25519.pub
+
+# Custom role, see README.md role networking
+# networking_ufw_rules: # default: []
+#   - { rule: "allow", port: 80, proto: "tcp" } # allow HTTP
+#   - { rule: "allow", port: 443, proto: "tcp" } # allow HTTPS
+#   - { rule: "allow", port: 443, proto: "udp" } # allow HTTP/2+
+
+# For more options see https://github.com/geerlingguy/ansible-role-security
+security_autoupdate_enabled: false # default: true
+
+# For more options see https://github.com/geerlingguy/ansible-role-docker
+docker_users:
+  - "{{ genisis_user }}"
+
+# For more options see https://github.com/geerlingguy/ansible-role-postgresql
+# NOTE: postgresql_privs is a customization with my own role (see README.md role postgresql)
+postgresql_users:
+  - name: "{{ genisis_user }}"
+    password: notasecurepassword
+  - name: "netdata"
+postgresql_privs:
+  - database: postgres
+    type: database
+    privs: pg_monitor
+    roles: netdata
+
+# Custom role, see README.md role netdata
+netdata_api_key: "00000000-0000-0000-0000-000000000000" # optional, required for parent config (generate with uuidgen)
+netdata_go_d_postgres:
+  - name: local
+    dsn: 'host=/var/run/postgresql dbname=postgres user=netdata'
+netdata_health_alarm_notify:
+  - option: SEND_NTFY
+    value: "YES"
+  - option: DEFAULT_RECIPIENT_NTFY
+    value: "https://ntfy.sh/REPLACEME"

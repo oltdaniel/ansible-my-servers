@@ -1,0 +1,20 @@
+---
+
+# Privileges to ensure exist.
+postgresql_privs: []
+# - database: # required
+#   grant_option: # default to make no change
+#   objs: # default to make no change
+#   privs: # defaults to not set
+#   roles: # required
+#   schema: # default public
+#   state: # default present
+#   type: # default table
+#   login_host: # defaults to 'localhost'
+#   login_password: # defaults to not set
+#   login_user: # defaults to '{{ postgresql_user }}'
+#   login_unix_socket: # defaults to 1st of postgresql_unix_socket_directories
+#   port: # defaults to not set
+
+# Whether to output privilege data when managing privileges.
+postgres_privs_no_log: false

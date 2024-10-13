@@ -1,0 +1,7 @@
+---
+- name: restart netdata
+  service:
+    name: netdata
+    state: "{{ netdata_restart_handler_state }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: netdata_service_manage | bool

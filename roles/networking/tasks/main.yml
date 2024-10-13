@@ -1,0 +1,27 @@
+- name: Update apt and install required system packages
+  apt:
+    pkg:
+      - ufw
+    state: latest
+    update_cache: true
+  become: yes
+
+- name: UFW - Allow SSH connections
+  community.general.ufw:
+    rule: allow
+    name: OpenSSH
+  become: yes
+
+- name: UFW - Apply custom rules
+  community.general.ufw:
+    rule: "{{ item.rule  }}"
+    port: "{{ item.port  }}"
+    proto: "{{ item.proto  }}"
+  loop: "{{ networking_ufw_rules }}"
+  become: yes
+
+- name: UFW - Enable and deny by default
+  community.general.ufw:
+    state: enabled
+    default: deny
+  become: yes

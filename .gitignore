@@ -1,0 +1,7 @@
+# Ansible stuff to ignore
+hosts.ini
+config.yml
+roles/geerlingguy.*
+
+# Generic stuff to ignore
+.vscode

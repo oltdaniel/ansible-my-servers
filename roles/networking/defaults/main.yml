@@ -1,0 +1,6 @@
+---
+# UFW rules to apply
+networking_ufw_rules: []
+#   - { rule: "allow", port: 80, proto: "tcp" } # allow HTTP
+#   - { rule: "allow", port: 443, proto: "tcp" } # allow HTTPS
+#   - { rule: "allow", port: 443, proto: "udp" } # allow HTTP/2+

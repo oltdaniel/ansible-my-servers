@@ -1,0 +1,7 @@
+{{ ansible_managed | comment }}
+
+jobs:
+{% for item in netdata_go_d_postgres %}
+  - name: '{{ item.name }}'
+    dsn: '{{ item.dsn }}'
+{% endfor %}

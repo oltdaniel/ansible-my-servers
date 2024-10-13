@@ -1,0 +1,29 @@
+---
+
+- import_role:
+    name: geerlingguy.postgresql
+
+- name: Ensure PostgreSQL privs are present.
+  postgresql_privs:
+    database: "{{ item.database }}"
+    grant_option: "{{ item.grant_option | default(omit) }}"
+    objs: "{{ item.objs | default(omit) }}"
+    privs: "{{ item.privs | default(omit) }}"
+    roles: "{{ item.roles }}"
+    schema: "{{ item.schema | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+    type: "{{ item.type | default(omit) }}"
+    login_host: "{{ item.login_host | default('localhost') }}"
+    login_password: "{{ item.login_password | default(omit) }}"
+    login_user: "{{ item.login_user | default(postgresql_user) }}"
+    login_unix_socket: "{{ item.login_unix_socket | default(postgresql_unix_socket_directories[0]) }}"
+    port: "{{ item.port | default(omit) }}"
+  loop: "{{ postgresql_privs }}"
+  no_log: "{{ postgres_privs_no_log }}"
+  become: true
+  become_user: "{{ postgresql_user }}"
+  # See: https://github.com/ansible/ansible/issues/16048#issuecomment-229012509
+  vars:
+    ansible_ssh_pipelining: true
+  environment:
+    PGOPTIONS: "{{ (postgresql_auth_method == 'scram-sha-256') | ternary('-c password_encryption=scram-sha-256', '') }}"

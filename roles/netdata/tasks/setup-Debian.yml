@@ -1,0 +1,57 @@
+---
+# Adapted from geerlingguy.docker role
+
+- name: Ensure apt key is not present in trusted.gpg.d
+  ansible.builtin.file:
+    path: /etc/apt/trusted.gpg.d/netdata.asc
+    state: absent
+
+- name: Ensure the repo referencing the previous trusted.gpg.d key is not present
+  apt_repository:
+    repo: "deb [arch={{ netdata_apt_arch }} signed-by=/etc/apt/trusted.gpg.d/netdata.asc] {{ netdata_repo_url }}/{{ netdata_apt_ansible_distribution | lower }} {{ ansible_distribution_release }} {{ netdata_apt_release_channel }}"
+    state: absent
+    filename: "{{ netdata_apt_filename }}"
+    update_cache: true
+  when: netdata_add_repo | bool
+
+- name: Ensure dependencies are installed.
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+    state: present
+  when: netdata_add_repo | bool
+
+- name: Ensure directory exists for /etc/apt/keyrings
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add Netdata apt key.
+  ansible.builtin.get_url:
+    url: "{{ netdata_apt_gpg_key }}"
+    dest: /etc/apt/keyrings/netdata.asc
+    mode: '0644'
+    force: false
+    checksum: "{{ netdata_apt_gpg_key_checksum | default(omit) }}"
+  register: add_repository_key
+  ignore_errors: "{{ netdata_apt_ignore_key_error }}"
+  when: netdata_add_repo | bool
+
+- name: Ensure curl is present (on older systems without SNI).
+  package: name=curl state=present
+  when: add_repository_key is failed and netdata_add_repo | bool
+
+- name: Add Netdata apt key (alternative for older systems without SNI).
+  shell: >
+    curl -sSL {{ netdata_apt_gpg_key }} | apt-key add -
+  when: add_repository_key is failed and netdata_add_repo | bool
+
+- name: Add Netdata repository.
+  apt_repository:
+    repo: "{{ netdata_apt_repository }}"
+    state: present
+    filename: "{{ netdata_apt_filename }}"
+    update_cache: true
+  when: netdata_add_repo | bool

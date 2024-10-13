@@ -1,0 +1,44 @@
+---
+- name: Verify passwordless sudoers configuration.
+  ansible.builtin.assert:
+    that: "genisis_user_passwordless_sudoer or genisis_group_sudo_passwordless_sudoers"
+    fail_msg: "The genisis user or the sudo group needs to be passwordless in order to make this work."
+    quiet: true
+
+- name: Create a new genisis user with sudo privileges.
+  user:
+    name: "{{ genisis_user }}"
+    state: present
+    groups: sudo
+    append: true
+    create_home: true
+    shell: "/bin/bash"
+  become: yes
+
+- name: Add genisis user to passwordless sudoers.
+  lineinfile:
+    dest: /etc/sudoers
+    regexp: '^{{ genisis_user }}'
+    line: '{{ genisis_user }} ALL=(ALL) NOPASSWD: ALL'
+    state: present
+    validate: 'visudo -cf %s'
+    mode: 0440
+  become: yes
+  when: genisis_user_passwordless_sudoer
+
+- name: Setup passwordless sudo
+  lineinfile:
+    path: /etc/sudoers
+    state: absent
+    regexp: '^%sudo'
+    line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+  become: yes
+  when: genisis_group_sudo_passwordless_sudoers
+
+- name: Set authorized key for genisis user.
+  ansible.posix.authorized_key:
+    user: "{{ genisis_user }}"
+    state: present
+    key: "{{ genisis_user_ssh_pubkey  }}"
+  become: yes

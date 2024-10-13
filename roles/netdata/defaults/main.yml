@@ -1,0 +1,36 @@
+---
+netdata_packages:
+  - netdata
+netdata_packages_state: present
+
+# Service options.
+netdata_service_manage: true
+netdata_service_state: started
+netdata_service_enabled: true
+netdata_restart_handler_state: restarted
+
+# Enable repo setup.
+netdata_add_repo: true
+
+# Netdata repo URL.
+netdata_repo_url: https://repo.netdata.cloud/repos
+
+# Used only for Debian/Ubuntu/Pop!_OS/Linux Mint. Switch 'stable' to 'edge' if needed.
+netdata_apt_release_channel: stable
+netdata_apt_ansible_distribution: "{{ 'ubuntu' if ansible_distribution in ['Pop!_OS', 'Linux Mint'] else ansible_distribution }}"
+netdata_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'armhf' if ansible_architecture == 'armv7l' else 'amd64' }}"
+netdata_apt_repository: "deb [arch={{ netdata_apt_arch }} signed-by=/etc/apt/keyrings/netdata.asc] {{ netdata_repo_url }}/{{ netdata_apt_release_channel }}/{{ netdata_apt_ansible_distribution | lower }} {{ ansible_distribution_release }}/"
+netdata_apt_ignore_key_error: true
+netdata_apt_gpg_key: https://repo.netdata.cloud/netdatabot.gpg.key
+netdata_apt_gpg_key_checksum: "sha256:fc95724c760ab294cd24cb5cf76f398b73d5c709bd91219758de3df78ddd8e49"
+netdata_apt_filename: "netdata"
+
+# Config info.
+netdata_config_path: /etc/netdata
+
+# Netdata specific options.
+netdata_go_d_postgres: []
+netdata_health_alarm_notify: []
+
+# Netdata ufw rules.
+netdata_enable_ufw_rules: yes

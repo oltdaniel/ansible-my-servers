@@ -1,0 +1,3 @@
+---
+# Whether to allow a reboot after the upgrade if required.
+upgrade_allow_reboot: no

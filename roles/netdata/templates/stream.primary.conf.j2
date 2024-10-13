@@ -1,0 +1,15 @@
+{{ ansible_managed | comment }}
+
+{% if netdata_primary_nodes | length > 1 %}
+[stream]
+    # Stream metrics to another Netdata
+    enabled = yes
+    # The IP and PORT of Parent 2
+    destination = {{ netdata_primary_nodes | reject('equalto', inventory_hostname) | map('regex_replace', '^(.*)$', '\\1:19999') | join(' ') }}
+    # This is the API key for the outgoing connection to Parent 2
+    api key = {{ netdata_api_key }}
+{% endif %}
+
+[{{ netdata_api_key }}]
+    # Accept metrics streaming from other Agents with the specified API key
+    enabled = yes

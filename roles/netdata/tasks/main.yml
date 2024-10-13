@@ -1,0 +1,112 @@
+- include_tasks: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Install Netdata packages.
+  package:
+    name: "{{ netdata_packages }}"
+    state: "{{ netdata_packages_state }}"
+  notify: restart netdata
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '<') or ansible_os_family not in ['Debian']"
+
+- name: Install Netdata packages (with downgrade option).
+  package:
+    name: "{{ netdata_packages }}"
+    state: "{{ netdata_packages_state }}"
+    allow_downgrade: true
+  notify: restart netdata
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '>=') and ansible_os_family in ['Debian']"
+
+- name: Configure managed plugins.
+  block:
+    - name: Update go.d/postgres.conf.
+      template:
+        src: "go.d/postgres.conf.j2"
+        dest: "{{ netdata_config_path }}/go.d/postgres.conf"
+        mode: 0644
+      when: netdata_go_d_postgres | length > 0
+  notify: restart netdata
+
+- name: Configure health alarm notify.
+  block:
+    # TODO(oltdaniel): Evaluate if we should always replace this file
+    - name: Copy template file.
+      copy:
+        src: /usr/lib/netdata/conf.d/health_alarm_notify.conf
+        dest: "{{ netdata_config_path }}/health_alarm_notify.conf"
+        mode: preserve
+        remote_src: true
+
+    - name: Add Ansible managed header comment.
+      blockinfile:
+        path: "{{ netdata_config_path }}/health_alarm_notify.conf"
+        insertbefore: "BOF"
+        block: |
+          #
+          # Ansible managed
+          #
+
+    - name: Configure options.
+      lineinfile:
+        path: "{{ netdata_config_path }}/health_alarm_notify.conf"
+        regexp: "^#?{{ item.option }}.+$"
+        line: "{{ item.option }}=\"{{ item.value }}\""
+        state: "{{ item.state | default('present') }}"
+      loop: "{{ netdata_health_alarm_notify }}"
+  notify: restart netdata
+
+- name: Identify netdata primary nodes.
+  set_fact:
+    netdata_primary_nodes: "{{ ansible_play_hosts | map('extract', hostvars) | selectattr('netdata_role', 'defined') | selectattr('netdata_role', '==', 'primary') | map(attribute='inventory_hostname') }}"
+
+- name: Identify netdata secondary nodes.
+  set_fact:
+    netdata_secondary_nodes: "{{ ansible_play_hosts | map('extract', hostvars) | selectattr('netdata_role', 'defined') | selectattr('netdata_role', '==', 'secondary') | map(attribute='inventory_hostname') }}"
+
+- name: Configure primary netdata nodes.
+  block:
+    - name: Update netdata.conf for primary.
+      template:
+        src: "netdata.primary.conf.j2"
+        dest: "{{ netdata_config_path }}/netdata.conf"
+        mode: 0644
+
+    - name: Update stream.conf for primary.
+      template:
+        src: "stream.primary.conf.j2"
+        dest: "{{ netdata_config_path }}/stream.conf"
+        mode: 0644
+
+    - name: Apply UFW rules on primary.
+      ufw:
+        rule: allow
+        src: "{{ item }}"
+        proto: any
+        port: 19999
+      loop: "{{ netdata_secondary_nodes }}"
+      when: netdata_enable_ufw_rules | bool
+  notify: restart netdata
+  when: netdata_role == "primary"
+
+- name: Configure secondary netdata nodes.
+  block:
+    - name: Check if there are primary nodes defined.
+      ansible.builtin.assert:
+        that: "netdata_primary_nodes | length > 0"
+        fail_msg: "In order to have secondaries, we need at least one primary netdata node."
+        quiet: true
+
+    - name: Update netdata.conf for secondary.
+      template:
+        src: "netdata.secondaries.conf.j2"
+        dest: "{{ netdata_config_path }}/netdata.conf"
+        mode: 0644
+
+    - name: Update stream.conf for secondary.
+      template:
+        src: "stream.secondaries.conf.j2"
+        dest: "{{ netdata_config_path }}/stream.conf"
+        mode: 0644
+  notify: restart netdata
+  when: netdata_role == "secondary" and (netdata_primary_nodes | length > 0)
