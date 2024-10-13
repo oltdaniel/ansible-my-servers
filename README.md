@@ -49,7 +49,7 @@ It currently deploys the following software:
 
 ### `upgrade.yml`
 
-This is the playbook I use for upgrades. If a reboot is allowed if necessarry, add `--extra-vars "upgrade_allow_reboot=true"` to the command.
+This is the playbook I use for upgrades. If a reboot is allowed if necessary, add `--extra-vars "upgrade_allow_reboot=true"` to the command.
 
 ## Roles
 
@@ -72,7 +72,7 @@ genisis_group_sudo_passwordless_sudoers: true # default: true
 # Whether to allow a reboot after the upgrade if required.
 upgrade_allow_reboot: no
 ```
-This variable will be used to check if an reboot is allowed after an upgrade when necessarry.
+This variable will be used to check if an reboot is allowed after an upgrade when necessary.
 
 ### `networking`
 
@@ -119,6 +119,8 @@ With these variables the [postgresql_privs](https://docs.ansible.com/ansible/lat
 
 ### `netdata`
 
+> These aren't allo variables that can be used, see [the role defaults](./roles/netdata/defaults/main.yml) for more options.
+
 ```yml
 # Role can be undefined, 'primary' or 'secondary'
 netdata_role: primary
@@ -150,6 +152,12 @@ netdata_go_d_postgres:
     dsn: 'host=/var/run/postgresql dbname=postgres user=netdata'
 ```
 This option allows you to configure the postgresql collector in `go.d/postgres.conf`.
+
+```yml
+# Configure the necessary UFW rules for netdata.
+netdata_enable_ufw_rules: yes
+```
+This option defines whether to apply the required UFW rules or not. In this setup it is recommended as we deploy UFW and this option will automatically apply the necessary rules for the primary and secondary netdata communcation. This will not publish the netdata interface to the public.
 
 ## License
 
