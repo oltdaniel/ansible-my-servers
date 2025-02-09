@@ -154,9 +154,9 @@ By default, WireGuard will be configured in such a way, that it uses the above m
 wireguard_export_custom_profiles: true # default: false
 wireguard_custom_profiles_directory: wireguard # default
 wireguard_custom_profiles: # default: []
-  - name: desktop
+  - name: desktop                 # NOTE: this will also be the filename
     address: 10.0.0.100
-    private_key: REDACTED
+    private_key: REDACTED         # optional
     public_key: thisisntavalidkey
 ```
 When `wireguard_export_custom_profiles` is set to true, the playbook will generate a config profile and save it into the directory configured in `wireguard_custom_profiles_directory`. The custom profile option `private_key` is optional (should be left empty when not using ansible vault), and the placeholder value `REDCATED` will be put in the config profile instead and hsould be replaced with the correct private key before importing it into the client.
