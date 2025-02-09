@@ -23,11 +23,11 @@ cp example.config.yml config.yml
 #
 # First execution (we assume you configured your ssh key via the hositng provider already)
 # NOTE: Change the remote user in case it isn't root.
-ansible-playbook genisis.yml -u root
+ansible-playbook playbooks/genisis.yml -u root
 # Deploy the software
-ansible-playbook software.yml
+ansible-playbook playbooks/software.yml
 # Upgrade the server and allow a reboot if required
-ansible-playbook upgrade.yml --extra-vars "upgrade_allow_reboot=true"
+ansible-playbook playbooks/upgrade.yml --extra-vars "upgrade_allow_reboot=true"
 ```
 
 ## Playbooks
