@@ -175,6 +175,10 @@ These are some more advanced options which allow you to change the interface nam
 
 > After this role has been executed and you connect to the VPN via your custom profile, you can use the `wireguard_address` of each host as the `ansible_host` address and configure everything else to communicate only via the WireGuard VPN in a secure tunnel.
 
+## Tested on
+
+- Debian 12
+
 ## License
 
 [MIT License](./LICENSE)
