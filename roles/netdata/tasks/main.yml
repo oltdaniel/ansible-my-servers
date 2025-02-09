@@ -56,57 +56,60 @@
       loop: "{{ netdata_health_alarm_notify }}"
   notify: restart netdata
 
-- name: Identify netdata primary nodes.
-  set_fact:
-    netdata_primary_nodes: "{{ ansible_play_hosts | map('extract', hostvars) | selectattr('netdata_role', 'defined') | selectattr('netdata_role', '==', 'primary') | map(attribute='inventory_hostname') }}"
-
-- name: Identify netdata secondary nodes.
-  set_fact:
-    netdata_secondary_nodes: "{{ ansible_play_hosts | map('extract', hostvars) | selectattr('netdata_role', 'defined') | selectattr('netdata_role', '==', 'secondary') | map(attribute='inventory_hostname') }}"
-
-- name: Configure primary netdata nodes.
+- name: Primary and Secondary setup (optional)
+  when: netdata_role is defined
   block:
-    - name: Update netdata.conf for primary.
-      template:
-        src: "netdata.primary.conf.j2"
-        dest: "{{ netdata_config_path }}/netdata.conf"
-        mode: 0644
+    - name: Identify netdata primary nodes.
+      set_fact:
+        netdata_primary_nodes: "{{ ansible_play_hosts | map('extract', hostvars) | selectattr('netdata_role', 'defined') | selectattr('netdata_role', '==', 'primary') | map(attribute='inventory_hostname') }}"
 
-    - name: Update stream.conf for primary.
-      template:
-        src: "stream.primary.conf.j2"
-        dest: "{{ netdata_config_path }}/stream.conf"
-        mode: 0644
+    - name: Identify netdata secondary nodes.
+      set_fact:
+        netdata_secondary_nodes: "{{ ansible_play_hosts | map('extract', hostvars) | selectattr('netdata_role', 'defined') | selectattr('netdata_role', '==', 'secondary') | map(attribute='inventory_hostname') }}"
 
-    - name: Apply UFW rules on primary.
-      ufw:
-        rule: allow
-        src: "{{ item }}"
-        proto: any
-        port: 19999
-      loop: "{{ netdata_secondary_nodes }}"
-      when: netdata_enable_ufw_rules | bool
-  notify: restart netdata
-  when: netdata_role == "primary"
+    - name: Configure primary netdata nodes.
+      block:
+        - name: Update netdata.conf for primary.
+          template:
+            src: "netdata.primary.conf.j2"
+            dest: "{{ netdata_config_path }}/netdata.conf"
+            mode: 0644
 
-- name: Configure secondary netdata nodes.
-  block:
-    - name: Check if there are primary nodes defined.
-      ansible.builtin.assert:
-        that: "netdata_primary_nodes | length > 0"
-        fail_msg: "In order to have secondaries, we need at least one primary netdata node."
-        quiet: true
+        - name: Update stream.conf for primary.
+          template:
+            src: "stream.primary.conf.j2"
+            dest: "{{ netdata_config_path }}/stream.conf"
+            mode: 0644
 
-    - name: Update netdata.conf for secondary.
-      template:
-        src: "netdata.secondaries.conf.j2"
-        dest: "{{ netdata_config_path }}/netdata.conf"
-        mode: 0644
+        - name: Apply UFW rules on primary.
+          ufw:
+            rule: allow
+            src: "{{ item }}"
+            proto: any
+            port: 19999
+          loop: "{{ netdata_secondary_nodes }}"
+          when: netdata_enable_ufw_rules | bool
+      notify: restart netdata
+      when: netdata_role == "primary"
 
-    - name: Update stream.conf for secondary.
-      template:
-        src: "stream.secondaries.conf.j2"
-        dest: "{{ netdata_config_path }}/stream.conf"
-        mode: 0644
-  notify: restart netdata
-  when: netdata_role == "secondary" and (netdata_primary_nodes | length > 0)
+    - name: Configure secondary netdata nodes.
+      block:
+        - name: Check if there are primary nodes defined.
+          ansible.builtin.assert:
+            that: "netdata_primary_nodes | length > 0"
+            fail_msg: "In order to have secondaries, we need at least one primary netdata node."
+            quiet: true
+
+        - name: Update netdata.conf for secondary.
+          template:
+            src: "netdata.secondaries.conf.j2"
+            dest: "{{ netdata_config_path }}/netdata.conf"
+            mode: 0644
+
+        - name: Update stream.conf for secondary.
+          template:
+            src: "stream.secondaries.conf.j2"
+            dest: "{{ netdata_config_path }}/stream.conf"
+            mode: 0644
+      notify: restart netdata
+      when: netdata_role == "secondary" and (netdata_primary_nodes | length > 0)

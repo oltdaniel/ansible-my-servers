@@ -13,7 +13,7 @@
     append: true
     create_home: true
     shell: "/bin/bash"
-  become: yes
+  become: true
 
 - name: Add genisis user to passwordless sudoers.
   lineinfile:
@@ -23,7 +23,7 @@
     state: present
     validate: 'visudo -cf %s'
     mode: 0440
-  become: yes
+  become: true
   when: genisis_user_passwordless_sudoer
 
 - name: Setup passwordless sudo
@@ -33,7 +33,7 @@
     regexp: '^%sudo'
     line: '%sudo ALL=(ALL) NOPASSWD: ALL'
     validate: 'visudo -cf %s'
-  become: yes
+  become: true
   when: genisis_group_sudo_passwordless_sudoers
 
 - name: Set authorized key for genisis user.
@@ -41,4 +41,4 @@
     user: "{{ genisis_user }}"
     state: present
     key: "{{ genisis_user_ssh_pubkey  }}"
-  become: yes
+  become: true

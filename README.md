@@ -21,8 +21,9 @@ cp example.config.yml config.yml
 #
 # !! Edit the hosts.ini and config.yml to your needs !!
 #
-# First execution (we assume the default cloud server user root via your local ssh key)
-ansible-playbook genisis.yml
+# First execution (we assume you configured your ssh key via the hositng provider already)
+# NOTE: Change the remote user in case it isn't root.
+ansible-playbook genisis.yml -u root
 # Deploy the software
 ansible-playbook software.yml
 # Upgrade the server and allow a reboot if required
@@ -43,7 +44,6 @@ This is the main playbook that is also responsible to verify for the initial set
 This is the playbook to install the generic software that runs on the servers. Before installing the software it upgrades everything and applies the network configuration.
 
 It currently deploys the following software:
-- Docker
 - PostgreSQL
 - Netdata
 
@@ -80,42 +80,21 @@ This role will install the `ufw` package, create an allow rule for OpenSSH and e
 
 ```yml
 # UFW rules to apply
-networking_ufw_rules: []
+networking_ufw_rules: [] # default
+#   - { rule: "allow", port: 19999, proto: "any", from_ip: "{{ wireguard_network }}" } # allow Netdata portal access from wireguard network
 #   - { rule: "allow", port: 80, proto: "tcp" } # allow HTTP
 #   - { rule: "allow", port: 443, proto: "tcp" } # allow HTTPS
 #   - { rule: "allow", port: 443, proto: "udp" } # allow HTTP/2+
 ```
 With this variable custom rules can be applied. Currently only the above properties are support.
 
+### `security`
+
+See [geerlingguy/ansible-role-security](https://github.com/geerlingguy/ansible-role-security) for the base of the role and its options.
+
 ### `postgresql`
 
 See [geerlingguy/ansible-role-postgresql](https://github.com/geerlingguy/ansible-role-postgresql) for the base of the role and its options.
-
-```yml
-# Privileges to ensure exist.
-postgresql_privs: # default: []
-  - database: postgres
-    type: group
-    objs: pg_monitor
-    roles: netdata
-# - database: # required
-#   grant_option: # default to make no change
-#   objs: # default to make no change
-#   privs: # defaults to not set
-#   roles: # required
-#   schema: # default public
-#   state: # default present
-#   type: # default table
-#   login_host: # defaults to 'localhost'
-#   login_password: # defaults to not set
-#   login_user: # defaults to '{{ postgresql_user }}'
-#   login_unix_socket: # defaults to 1st of postgresql_unix_socket_directories
-#   port: # defaults to not set
-
-# Whether to output privilege data when managing privileges.
-postgres_privs_no_log: yes
-```
-With these variables the [postgresql_privs](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_privs_module.html) module can be used directly from the config. The example shows the granting of privileges for the netdata postgresql user that netdata can use to monitor the server.
 
 ### `netdata`
 
@@ -155,9 +134,46 @@ This option allows you to configure the postgresql collector in `go.d/postgres.c
 
 ```yml
 # Configure the necessary UFW rules for netdata.
-netdata_enable_ufw_rules: yes
+netdata_enable_ufw_rules: true
 ```
 This option defines whether to apply the required UFW rules or not. In this setup it is recommended as we deploy UFW and this option will automatically apply the necessary rules for the primary and secondary netdata communcation. This will not publish the netdata interface to the public.
+
+### `wireguard`
+
+> These aren't allo variables that can be used, see [the role defaults](./roles/wireguard/defaults/main.yml) for more options.
+
+```yml
+# Wireguard settings
+wireguard_network: 10.0.0.0/24 # default
+wireguard_address: 10.0.0.1 # default
+```
+By default, WireGuard will be configured in such a way, that it uses the above mentioned network settings. You can easily overwrite `wireguard_address` for each host individually (see `example.hosts.ini`).
+
+```yml
+# Custom WireGuard profiles
+wireguard_export_custom_profiles: true # default: false
+wireguard_custom_profiles_directory: wireguard # default
+wireguard_custom_profiles: # default: []
+  - name: desktop
+    address: 10.0.0.100
+    private_key: REDACTED
+    public_key: thisisntavalidkey
+```
+When `wireguard_export_custom_profiles` is set to true, the playbook will generate a config profile and save it into the directory configured in `wireguard_custom_profiles_directory`. The custom profile option `private_key` is optional (should be left empty when not using ansible vault), and the placeholder value `REDCATED` will be put in the config profile instead and hsould be replaced with the correct private key before importing it into the client.
+
+```yml
+# Default WireGuard interface name
+wireguard_interface: wg0
+
+# Allows config to disable server
+wireguard_disable_server: false
+
+# Default port that the WireGuard server will listen on
+wireguard_listen_port: 51820
+```
+These are some more advanced options which allow you to change the interface name, disable listening and thereby the server function and also change the port used in the WireGuard environment.
+
+> After this role has been executed and you connect to the VPN via your custom profile, you can use the `wireguard_address` of each host as the `ansible_host` address and configure everything else to communicate only via the WireGuard VPN in a secure tunnel.
 
 ## License
 

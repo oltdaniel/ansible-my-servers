@@ -1,4 +1,4 @@
 ---
-genisis_user_passwordless_sudoer: yes
-genisis_group_sudo_passwordless_sudoers: yes
+genisis_user_passwordless_sudoer: true
+genisis_group_sudo_passwordless_sudoers: true
 genisis_user_ssh_pubkey: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_ed25519.pub') }}"

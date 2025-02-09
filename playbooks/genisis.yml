@@ -1,0 +1,19 @@
+---
+- name: Setup servers
+  hosts: servers
+  gather_facts: true
+
+  vars_files:
+    - ../config.yml
+
+  roles:
+    - name: genisis
+      become: true
+    - name: upgrade
+      become: true
+    - name: networking
+      become: true
+    - name: geerlingguy.security
+      become: true
+    - name: wireguard
+      become: true

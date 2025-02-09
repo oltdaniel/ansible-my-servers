@@ -1,9 +1,9 @@
 ---
 - name: Update and upgrade apt packages
   apt:
-    update_cache: yes
+    update_cache: true
     upgrade: dist
-  become: yes
+  become: true
 
 - name: Check if reboot is required
   stat:
@@ -14,9 +14,9 @@
 - name: Reboot the server (if required)
   reboot:
   when: reboot_required_file.stat.exists == true and upgrade_allow_reboot == true
-  become: yes
+  become: true
 
 - name: Remove dependencies that are no longer required
   apt:
     autoremove: true
-  become: yes
+  become: true

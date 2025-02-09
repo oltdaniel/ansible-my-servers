@@ -1,4 +1,9 @@
 ---
+
+networking_packages:
+  - ufw
+networking_packages_state: present
+
 # UFW rules to apply
 networking_ufw_rules: []
 #   - { rule: "allow", port: 80, proto: "tcp" } # allow HTTP

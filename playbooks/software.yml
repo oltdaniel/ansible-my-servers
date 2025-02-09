@@ -5,14 +5,16 @@
   remote_user: "{{ genisis_user }}"
 
   vars_files:
-    - config.yml
+    - ../config.yml
 
   roles:
-    - upgrade
-    - networking
-    - role: geerlingguy.docker
+    - name: upgrade
       become: true
-    - role: postgresql
+    - name: networking
+      become: true
+    - name: wireguard
+      become: true
+    - role: geerlingguy.postgresql
       become: true
     - role: netdata
       become: true

@@ -2,6 +2,7 @@
 hosts.ini
 config.yml
 roles/geerlingguy.*
+wireguard
 
 # Generic stuff to ignore
 .vscode

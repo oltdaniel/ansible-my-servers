@@ -33,4 +33,4 @@ netdata_go_d_postgres: []
 netdata_health_alarm_notify: []
 
 # Netdata ufw rules.
-netdata_enable_ufw_rules: yes
+netdata_enable_ufw_rules: true

@@ -1,27 +1,44 @@
-- name: Update apt and install required system packages
-  apt:
-    pkg:
-      - ufw
-    state: latest
-    update_cache: true
-  become: yes
+---
+
+- name: Install Networking packages.
+  package:
+    name: "{{ networking_packages }}"
+    state: "{{ networking_packages_state }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '<') or ansible_os_family not in ['Debian']"
+
+- name: Install Networking packages (with downgrade option).
+  package:
+    name: "{{ networking_packages }}"
+    state: "{{ networking_packages_state }}"
+    allow_downgrade: true
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '>=') and ansible_os_family in ['Debian']"
 
 - name: UFW - Allow SSH connections
   community.general.ufw:
     rule: allow
     name: OpenSSH
-  become: yes
+  become: true
 
 - name: UFW - Apply custom rules
   community.general.ufw:
-    rule: "{{ item.rule  }}"
-    port: "{{ item.port  }}"
-    proto: "{{ item.proto  }}"
+    rule: "{{ item.rule | default(omit) }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
+    from_ip: "{{ item.from_ip | default(omit) }}"
+    to_ip: "{{ item.to_ip | default(omit) }}"
+    from_port: "{{ item.from_port | default(omit) }}"
+    to_port: "{{ item.to_port | default(omit) }}"
+    interface: "{{ item.interface | default(omit) }}"
+    direction: "{{ item.direction | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+    logging: "{{ item.logging | default(omit) }}"
   loop: "{{ networking_ufw_rules }}"
-  become: yes
+  become: true
 
 - name: UFW - Enable and deny by default
   community.general.ufw:
     state: enabled
     default: deny
-  become: yes
+  become: true

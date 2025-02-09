@@ -5,7 +5,8 @@
   remote_user: "{{ genisis_user }}"
 
   vars_files:
-    - config.yml
+    - ../config.yml
 
   roles:
-    - upgrade
+    - name: upgrade
+      become: true

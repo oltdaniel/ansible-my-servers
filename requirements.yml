@@ -1,5 +1,8 @@
 ---
 roles:
   - name: geerlingguy.security
-  - name: geerlingguy.docker
   - name: geerlingguy.postgresql
+
+collections:
+  - name: community.general
+  - name: community.postgresql

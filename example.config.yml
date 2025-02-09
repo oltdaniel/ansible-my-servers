@@ -7,16 +7,14 @@ genisis_user: "{{ lookup('env','USER') }}"
 
 # Custom role, see README.md role networking
 # networking_ufw_rules: # default: []
+#   - { rule: "allow", port: 19999, proto: "any", from_ip: "{{ wireguard_network }}" } # allow Netdata portal access from wireguard network
 #   - { rule: "allow", port: 80, proto: "tcp" } # allow HTTP
 #   - { rule: "allow", port: 443, proto: "tcp" } # allow HTTPS
 #   - { rule: "allow", port: 443, proto: "udp" } # allow HTTP/2+
 
 # For more options see https://github.com/geerlingguy/ansible-role-security
 security_autoupdate_enabled: false # default: true
-
-# For more options see https://github.com/geerlingguy/ansible-role-docker
-docker_users:
-  - "{{ genisis_user }}"
+security_fail2ban_enabled: false # default: true
 
 # For more options see https://github.com/geerlingguy/ansible-role-postgresql
 # NOTE: postgresql_privs is a customization with my own role (see README.md role postgresql)
@@ -40,3 +38,14 @@ netdata_health_alarm_notify:
     value: "YES"
   - option: DEFAULT_RECIPIENT_NTFY
     value: "https://ntfy.sh/REPLACEME"
+
+# Wireguard settings
+wireguard_network: 10.0.0.0/24 # default
+
+# Custom WireGuard profiles
+wireguard_export_custom_profiles: true # default: false
+wireguard_custom_profiles: # default: []
+  - name: desktop
+    address: 10.0.0.100
+    private_key: uM7nPA+rXKbxx3pOU5iunMNHj+S80L53R4BKzGCw+nY=
+    public_key: RiHiil0d6btdH0t0leYKa0ddgFJUZQ3LQ/wAaS5VaAU=
