@@ -1,0 +1,45 @@
+---
+
+wireguard_packages:
+  - wireguard
+wireguard_packages_state: present
+
+# Service options.
+wireguard_service_manage: true
+wireguard_service_state: started
+wireguard_service_enabled: true
+wireguard_restart_handler_state: restarted
+
+# Default WireGuard interface name
+wireguard_interface: wg0
+
+# Allows config to disable server
+wireguard_disable_server: false
+
+# Default port that the WireGuard server will listen on
+wireguard_listen_port: 51820
+
+# Network the WireGuard servers are in
+wireguard_network: 10.0.0.0/24
+
+# WireGuard address for the host
+wireguard_address: 10.0.0.1
+
+# Directory for wireguard related things
+wireguard_directory: /etc/wireguard
+
+# Paths for the keys
+wireguard_private_key_path: "{{ wireguard_directory }}/{{ wireguard_interface }}.key"
+wireguard_public_key_path: "{{ wireguard_directory }}/{{ wireguard_interface }}.pub"
+
+# File permissions
+wireguard_key_permissions: "0600"
+wireguard_config_permissions: "0600"
+
+# WireGuard ufw rules.
+wireguard_enable_ufw_rules: true
+
+# Custom WireGuard profiles relared settings.
+wireguard_custom_profiles: []
+wireguard_export_custom_profiles: false
+wireguard_custom_profiles_directory: wireguard-profiles

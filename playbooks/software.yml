@@ -14,8 +14,7 @@
       become: true
     - name: wireguard
       become: true
-    - role: geerlingguy.postgresql
+    - name: geerlingguy.postgresql
       become: true
-    - role: netdata
+    - name: netdata
       become: true
-      

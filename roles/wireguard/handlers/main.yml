@@ -1,0 +1,7 @@
+---
+- name: restart wireguard interface
+  service:
+    name: "wg-quick@{{ wireguard_interface }}"
+    state: "{{ wireguard_restart_handler_state }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: wireguard_service_manage | bool

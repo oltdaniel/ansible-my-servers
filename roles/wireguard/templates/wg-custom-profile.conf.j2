@@ -1,0 +1,12 @@
+{{ ansible_managed | comment }}
+
+[Interface]
+Address = {{ item.address }}/{{ wireguard_network.split('/')[1] }}
+PrivateKey = {{ item.private_key | default("REPLACEME") }}
+
+{% for host in groups['all'] %}
+[Peer]
+PublicKey = {{ hostvars[host]['wireguard_public_key'] }}
+AllowedIPs = {{ hostvars[host]['wireguard_address'] }}/32
+Endpoint = {{ hostvars[host]['wireguard_endpoint_address'] | default(hostvars[host]['ansible_host']) }}:{{ hostvars[host]['wireguard_listen_port'] | default(wireguard_listen_port) }}
+{% endfor %}

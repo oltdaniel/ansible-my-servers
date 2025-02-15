@@ -1,0 +1,24 @@
+{{ ansible_managed | comment }}
+
+[Interface]
+Address = {{ wireguard_address }}/{{ wireguard_network.split('/')[1] }}
+PrivateKey = {{ wireguard_private_key }}
+{% if not wireguard_disable_server | bool %}
+ListenPort = {{ wireguard_listen_port }}
+{% endif %}
+
+{% for host in groups['all'] %}
+{% if host != inventory_hostname %}
+[Peer]
+PublicKey = {{ hostvars[host]['wireguard_public_key'] }}
+AllowedIPs = {{ hostvars[host]['wireguard_address'] }}/32
+Endpoint = {{ hostvars[host]['wireguard_endpoint_address'] | default(hostvars[host]['ansible_host']) }}:{{ hostvars[host]['wireguard_listen_port'] | default(wireguard_listen_port) }}
+{% endif %}
+{% endfor %}
+
+{% for wireguard_custom_profile in wireguard_custom_profiles %}
+[Peer]
+# {{ wireguard_custom_profile.name }}
+PublicKey = {{ wireguard_custom_profile.public_key }}
+AllowedIPs = {{ wireguard_custom_profile.address }}/32
+{% endfor %}

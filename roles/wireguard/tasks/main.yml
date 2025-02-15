@@ -1,0 +1,137 @@
+---
+
+- name: Install WireGuard packages.
+  package:
+    name: "{{ wireguard_packages }}"
+    state: "{{ wireguard_packages_state }}"
+  notify: restart wireguard interface
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '<') or ansible_os_family not in ['Debian']"
+
+- name: Install WireGuard packages (with downgrade option).
+  package:
+    name: "{{ wireguard_packages }}"
+    state: "{{ wireguard_packages_state }}"
+    allow_downgrade: true
+  notify: restart wireguard interface
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '>=') and ansible_os_family in ['Debian']"
+
+- name: Ensure WireGuard directory exists
+  ansible.builtin.file:
+    path: "{{ wireguard_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  become: true
+
+- name: Check if private key exists.
+  stat:
+    path:  "{{ wireguard_private_key_path }}"
+  register: wireguard_private_key_file
+  become: true
+
+- name: Generate new private key (if not present).
+  when: not wireguard_private_key_file.stat.exists
+  block:
+    - name: Ensure correct umask for private key generation
+      ansible.builtin.file:
+        path: "{{ wireguard_private_key_path }}"
+        mode: "{{ wireguard_key_permissions }}"
+        state: touch
+      become: true
+
+    - name: Generate private key.
+      ansible.builtin.command: wg genkey
+      register: wireguard_private_key_cmd
+
+    - name: Save private key to file.
+      ansible.builtin.copy:
+        content: "{{ wireguard_private_key_cmd.stdout }}"
+        dest: "{{ wireguard_private_key_path }}"
+      become: true
+
+    - name: Ensure correct umask for public key generation
+      ansible.builtin.file:
+        path: "{{ wireguard_public_key_path }}"
+        mode: "{{ wireguard_key_permissions }}"
+        state: touch
+      become: true
+
+    - name: Generate public key.
+      ansible.builtin.command:
+        cmd: wg pubkey
+        stdin: "{{ wireguard_private_key_cmd.stdout }}"
+      register: wireguard_public_key_cmd
+
+    - name: Save public key to file.
+      ansible.builtin.copy:
+        content: "{{ wireguard_public_key_cmd.stdout }}"
+        dest: "{{ wireguard_public_key_path }}"
+      become: true
+
+- name: Read public key from remote node
+  slurp:
+    src: "{{ wireguard_public_key_path }}"
+  register: wireguard_public_key_raw
+  become: true
+
+- name: Store public key in hostvars
+  set_fact:
+    wireguard_public_key: "{{ wireguard_public_key_raw.content | b64decode }}"
+
+- name: Read private key from remote node
+  slurp:
+    src: "{{ wireguard_private_key_path }}"
+  register: wireguard_private_key_raw
+  become: true
+
+- name: Store private key in hostvars
+  set_fact:
+    wireguard_private_key: "{{ wireguard_private_key_raw.content | b64decode }}"
+
+- name: Apply UFW rules for WireGuard.
+  ufw:
+    rule: allow
+    proto: udp
+    port: "{{ wireguard_listen_port }}"
+  when: (wireguard_enable_ufw_rules | bool) and not wireguard_disable_server
+  become: true
+
+- name: Generate WireGuard configuration file
+  ansible.builtin.template:
+    src: wg-interface.conf.j2
+    dest: "{{ wireguard_directory }}/{{ wireguard_interface }}.conf"
+    owner: root
+    group: root
+    mode: "{{ wireguard_config_permissions }}"
+  notify: restart wireguard interface
+  become: true
+
+- name: Ensure WireGuard service is running as configured.
+  service:
+    name: wg-quick@{{ wireguard_interface }}
+    state: "{{ wireguard_service_state }}"
+    enabled: "{{ wireguard_service_enabled }}"
+  become: true
+
+- name: Export WireGuard custom profiles.
+  when: wireguard_export_custom_profiles
+  block:
+    - name: Ensure export directory exists.
+      local_action:
+        module: ansible.builtin.file
+        path: "{{ wireguard_custom_profiles_directory }}"
+        state: directory
+      become: false
+      run_once: true
+
+    - name: Export profiles to directory.
+      local_action:
+        module: ansible.builtin.template
+        src: wg-custom-profile.conf.j2
+        dest: "{{ wireguard_custom_profiles_directory }}/{{ item.name }}.conf"
+      loop: "{{ wireguard_custom_profiles }}"
+      become: false
+      run_once: true
