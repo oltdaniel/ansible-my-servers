@@ -1,0 +1,56 @@
+---
+
+- name: Ensure apt key is not present in trusted.gpg.d
+  ansible.builtin.file:
+    path: /etc/apt/trusted.gpg.d/caddy.asc
+    state: absent
+
+- name: Ensure the repo referencing the previous trusted.gpg.d key is not present
+  apt_repository:
+    repo: "deb [arch={{ caddy_apt_arch }} signed-by=/etc/apt/trusted.gpg.d/caddy.asc] {{ caddy_repo_url }}/{{ caddy_apt_ansible_distribution | lower }} {{ ansible_distribution_release }} {{ caddy_apt_release_channel }}"
+    state: absent
+    filename: "{{ caddy_apt_filename }}"
+    update_cache: true
+  when: caddy_add_repo | bool
+
+- name: Ensure dependencies are installed.
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+    state: present
+  when: caddy_add_repo | bool
+
+- name: Ensure directory exists for /etc/apt/keyrings
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add caddy apt key.
+  ansible.builtin.get_url:
+    url: "{{ caddy_apt_gpg_key }}"
+    dest: /etc/apt/keyrings/caddy.asc
+    mode: '0644'
+    force: false
+    checksum: "{{ caddy_apt_gpg_key_checksum | default(omit) }}"
+  register: add_repository_key
+  ignore_errors: "{{ caddy_apt_ignore_key_error }}"
+  when: caddy_add_repo | bool
+
+- name: Ensure curl is present (on older systems without SNI).
+  package: name=curl state=present
+  when: add_repository_key is failed and caddy_add_repo | bool
+
+- name: Add caddy apt key (alternative for older systems without SNI).
+  shell: >
+    curl -sSL {{ caddy_apt_gpg_key }} | apt-key add -
+  when: add_repository_key is failed and caddy_add_repo | bool
+
+- name: Add caddy repository.
+  apt_repository:
+    repo: "{{ caddy_apt_repository }}"
+    state: present
+    filename: "{{ caddy_apt_filename }}"
+    update_cache: true
+  when: caddy_add_repo | bool

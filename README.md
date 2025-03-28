@@ -3,7 +3,7 @@
 These are the ansible playbooks I use to kind of replicate the setup across multiple servers I use for my stuff. This is mainly used for playing a bit around with ansible and do some more complex stuff.
 
 > [!IMPORTANT]  
-> These playbooks are currently only tested on Ubuntu 24.04 LTS. Only some functions work across multiple distros.
+> These playbooks are currently only tested on Debian 12. Only some functions work across multiple distros.
 
 Thank you [@geerlingguy](https://github.com/geerlingguy) for providing the base roles I use here for my servers.
 
@@ -21,7 +21,7 @@ cp example.config.yml config.yml
 #
 # !! Edit the hosts.ini and config.yml to your needs !!
 #
-# First execution (we assume you configured your ssh key via the hositng provider already)
+# First execution (we assume you configured your ssh key via the hosting provider already)
 # NOTE: Change the remote user in case it isn't root.
 ansible-playbook playbooks/genisis.yml -u root
 # Deploy the software
@@ -46,6 +46,8 @@ This is the playbook to install the generic software that runs on the servers. B
 It currently deploys the following software:
 - PostgreSQL
 - Netdata
+- Wireguard
+- Caddy
 
 ### `upgrade.yml`
 
@@ -140,7 +142,9 @@ This option defines whether to apply the required UFW rules or not. In this setu
 
 ### `wireguard`
 
-> These aren't allo variables that can be used, see [the role defaults](./roles/wireguard/defaults/main.yml) for more options.
+> These aren't all variables that can be used, see [the role defaults](./roles/wireguard/defaults/main.yml) for more options.
+
+The main use case is to connect all the servers in the inventory together into a single VPN to have a private network across cloud providers.
 
 ```yml
 # Wireguard settings
@@ -174,6 +178,68 @@ wireguard_listen_port: 51820
 These are some more advanced options which allow you to change the interface name, disable listening and thereby the server function and also change the port used in the WireGuard environment.
 
 > After this role has been executed and you connect to the VPN via your custom profile, you can use the `wireguard_address` of each host as the `ansible_host` address and configure everything else to communicate only via the WireGuard VPN in a secure tunnel.
+
+### `caddy`
+
+> These aren't all variables that can be used, see [the role defaults](./roles/caddy/defaults/main.yml) for more options.
+
+```yml
+# Automatically deploy HTTP/HTTPS UFW roles (TCP and UDP)
+caddy_enable_ufw_rules: true
+```
+
+This automatically deployes UFW rules to allow for HTTP and HTTPS Traffic for both TCP and UDP.
+
+#### Example Playbook
+
+This is an example playbook that can be used to deploy a custom website. 
+
+```yml
+# playbooks/deploy-website.yml
+---
+- name: Deploy caddy website
+  hosts: servers
+  gather_facts: true
+  remote_user: "{{ genisis_user }}"
+
+  vars_files:
+    - ../config.yml
+
+  roles:
+    - name: caddy
+      become: true
+
+  tasks:
+    - name: Create website folder
+      ansible.builtin.file:
+        path: /srv/http/www
+        state: directory
+        recurse: yes
+        owner: caddy
+        group: caddy
+      become: true
+
+    - name: Upload website content.
+      ansible.builtin.copy:
+        src: ../www/
+        dest: /srv/http/www
+        owner: caddy
+        group: caddy
+      become: true
+
+    - name: Deploy caddy config.
+      ansible.builtin.copy:
+        content:  |
+          :80
+
+          root * /srv/http/www
+          file_server
+        dest: /etc/caddy/Caddyfile
+        owner: caddy
+        group: caddy
+      notify: reload caddy
+      become: true
+```
 
 ## Tested on
 

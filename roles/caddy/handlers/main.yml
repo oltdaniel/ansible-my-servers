@@ -1,0 +1,14 @@
+---
+- name: restart caddy
+  service:
+    name: caddy
+    state: "{{ caddy_restart_handler_state }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: caddy_service_manage | bool
+
+- name: reload caddy
+  service:
+    name: caddy
+    state: "{{ caddy_reload_handler_state }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: caddy_service_manage | bool

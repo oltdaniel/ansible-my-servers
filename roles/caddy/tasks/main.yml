@@ -1,0 +1,31 @@
+---
+- include_tasks: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Install caddy packages.
+  package:
+    name: "{{ caddy_packages }}"
+    state: "{{ caddy_packages_state }}"
+  notify: restart caddy
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '<') or ansible_os_family not in ['Debian']"
+
+- name: Install caddy packages (with downgrade option).
+  package:
+    name: "{{ caddy_packages }}"
+    state: "{{ caddy_packages_state }}"
+    allow_downgrade: true
+  notify: restart caddy
+  ignore_errors: "{{ ansible_check_mode }}"
+  when: "ansible_version.full is version_compare('2.12', '>=') and ansible_os_family in ['Debian']"
+
+- name: Apply UFW rules for caddy.
+  ufw:
+    rule: allow
+    src: any
+    proto: any
+    port: "{{ item }}"
+  loop:
+    - 80
+    - 443
+  when: caddy_enable_ufw_rules | bool

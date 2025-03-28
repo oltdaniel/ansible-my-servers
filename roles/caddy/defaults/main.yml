@@ -1,0 +1,33 @@
+---
+caddy_packages:
+  - caddy
+caddy_packages_state: present
+
+# Service options.
+caddy_service_manage: true
+caddy_service_state: started
+caddy_service_enabled: true
+caddy_restart_handler_state: restarted
+caddy_reload_handler_state: reloaded
+
+# Enable repo setup.
+caddy_add_repo: true
+
+# caddy repo URL.
+caddy_repo_url: https://dl.cloudsmith.io/public/caddy
+
+# Used only for Debian/Ubuntu/Pop!_OS/Linux Mint.
+caddy_apt_release_channel: stable
+caddy_apt_ansible_distribution: "{{ 'ubuntu' if ansible_distribution in ['Pop!_OS', 'Linux Mint'] else ansible_distribution }}"
+caddy_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'armhf' if ansible_architecture == 'armv7l' else 'amd64' }}"
+caddy_apt_repository: "deb [arch={{ caddy_apt_arch }} signed-by=/etc/apt/keyrings/caddy.asc] {{ caddy_repo_url }}/{{ caddy_apt_release_channel }}/deb/{{ caddy_apt_ansible_distribution | lower }} any-version main"
+caddy_apt_ignore_key_error: true
+caddy_apt_gpg_key: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+caddy_apt_gpg_key_checksum: "sha256:5791c2fb6b6e82feb5a69834dd2131f4bcc30af0faec37783b2dc1c5c224a82a"
+caddy_apt_filename: "caddy"
+
+# Config info.
+caddy_config_path: /etc/caddy
+
+# caddy ufw rules.
+caddy_enable_ufw_rules: true

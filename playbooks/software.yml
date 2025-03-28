@@ -8,13 +8,15 @@
     - ../config.yml
 
   roles:
-    - name: upgrade
-      become: true
-    - name: networking
-      become: true
-    - name: wireguard
-      become: true
-    - name: geerlingguy.postgresql
-      become: true
-    - name: netdata
+    # - name: upgrade
+    #   become: true
+    # - name: networking
+    #   become: true
+    # - name: wireguard
+    #   become: true
+    # - name: geerlingguy.postgresql
+    #   become: true
+    # - name: netdata
+    #   become: true
+    - name: caddy
       become: true
